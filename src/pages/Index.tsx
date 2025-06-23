@@ -57,28 +57,6 @@ const Index = () => {
 
             {/* Main Menu */}
             <div className="text-center space-y-6">
-              <Card className="bg-black/40 backdrop-blur-lg border-gray-700/50 p-8 max-w-2xl mx-auto">
-                <h2 className="text-2xl font-bold mb-6 text-green-400">🟢 Key Features</h2>
-                <div className="space-y-4 text-left">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                    <span>🔐 Easy Login — Jump in using just your email</span>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
-                    <span>🐍 Earn-as-You-Play — Collect $CHOMP tokens with every slither</span>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
-                    <span>🌎 Global Leaderboard — Climb the ranks worldwide</span>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
-                    <span>🎁 Real Rewards — Redeem $CHOMP for boosts and NFTs</span>
-                  </div>
-                </div>
-              </Card>
-
               <div className="space-y-4">
                 <Button 
                   onClick={() => setIsPlaying(true)}
