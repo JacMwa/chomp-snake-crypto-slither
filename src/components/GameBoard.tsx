@@ -1,5 +1,4 @@
-
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
@@ -24,6 +23,53 @@ const GameBoard = ({ onGameEnd }: GameBoardProps) => {
   const [score, setScore] = useState(0);
   const [gameOver, setGameOver] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  const audioContextRef = useRef<AudioContext | null>(null);
+
+  // Initialize Audio Context
+  useEffect(() => {
+    const initAudio = () => {
+      if (!audioContextRef.current) {
+        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      }
+    };
+    
+    // Initialize on first user interaction
+    const handleFirstInteraction = () => {
+      initAudio();
+      document.removeEventListener('click', handleFirstInteraction);
+      document.removeEventListener('keydown', handleFirstInteraction);
+    };
+
+    document.addEventListener('click', handleFirstInteraction);
+    document.addEventListener('keydown', handleFirstInteraction);
+
+    return () => {
+      document.removeEventListener('click', handleFirstInteraction);
+      document.removeEventListener('keydown', handleFirstInteraction);
+    };
+  }, []);
+
+  // Play sound effect
+  const playSoundEffect = useCallback(() => {
+    if (!audioContextRef.current) return;
+
+    const ctx = audioContextRef.current;
+    const oscillator = ctx.createOscillator();
+    const gainNode = ctx.createGain();
+
+    oscillator.connect(gainNode);
+    gainNode.connect(ctx.destination);
+
+    // Matrix-style digital sound
+    oscillator.frequency.setValueAtTime(800, ctx.currentTime);
+    oscillator.frequency.exponentialRampToValueAtTime(400, ctx.currentTime + 0.1);
+    
+    gainNode.gain.setValueAtTime(0.3, ctx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+
+    oscillator.start(ctx.currentTime);
+    oscillator.stop(ctx.currentTime + 0.2);
+  }, []);
 
   const generateFood = useCallback(() => {
     const newFood = {
@@ -61,13 +107,14 @@ const GameBoard = ({ onGameEnd }: GameBoardProps) => {
       if (head.x === food.x && head.y === food.y) {
         setScore(prevScore => prevScore + 10);
         setFood(generateFood());
+        playSoundEffect(); // Play sound when eating food
       } else {
         newSnake.pop();
       }
 
       return newSnake;
     });
-  }, [direction, food, gameOver, isPaused, generateFood]);
+  }, [direction, food, gameOver, isPaused, generateFood, playSoundEffect]);
 
   useEffect(() => {
     const gameInterval = setInterval(moveSnake, GAME_SPEED);
@@ -111,13 +158,13 @@ const GameBoard = ({ onGameEnd }: GameBoardProps) => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-4xl mx-auto font-mono">
       {/* Game Header */}
       <div className="flex justify-between items-center mb-6">
-        <Card className="bg-gradient-to-r from-green-500/20 to-yellow-500/20 border-green-400/30 p-4">
+        <Card className="bg-black/80 border-green-500/50 p-4 backdrop-blur-sm">
           <div className="text-center">
-            <div className="text-2xl font-bold text-green-400">{score}</div>
-            <div className="text-sm text-gray-300">Score</div>
+            <div className="text-2xl font-bold text-green-400 font-mono">{score}</div>
+            <div className="text-sm text-green-300">DATA CONSUMED</div>
           </div>
         </Card>
         
@@ -125,24 +172,24 @@ const GameBoard = ({ onGameEnd }: GameBoardProps) => {
           <Button 
             onClick={() => setIsPaused(!isPaused)}
             variant="outline"
-            className="border-yellow-500 text-yellow-300 hover:bg-yellow-500/20"
+            className="border-green-500 text-green-400 hover:bg-green-500/20 bg-black/50 font-mono rounded-none"
           >
-            {isPaused ? '▶️ Resume' : '⏸️ Pause'}
+            {isPaused ? '▶️ RESUME' : '⏸️ PAUSE'}
           </Button>
           <Button 
             onClick={() => onGameEnd(score)}
             variant="outline"
-            className="border-red-500 text-red-300 hover:bg-red-500/20"
+            className="border-red-500 text-red-400 hover:bg-red-500/20 bg-black/50 font-mono rounded-none"
           >
-            🏠 Menu
+            🏠 EXIT
           </Button>
         </div>
       </div>
 
       {/* Game Board */}
-      <Card className="bg-black/60 backdrop-blur-lg border-gray-700/50 p-4">
+      <Card className="bg-black/90 backdrop-blur-lg border-green-500/50 p-4">
         <div 
-          className="grid gap-1 mx-auto"
+          className="grid gap-0 mx-auto border border-green-500/30"
           style={{ 
             gridTemplateColumns: `repeat(${BOARD_SIZE}, 1fr)`,
             maxWidth: '600px',
@@ -161,14 +208,15 @@ const GameBoard = ({ onGameEnd }: GameBoardProps) => {
               <div
                 key={index}
                 className={`
-                  aspect-square rounded-sm transition-all duration-100
-                  ${isSnakeHead ? 'bg-gradient-to-br from-green-400 to-green-600 shadow-lg shadow-green-400/50' : ''}
-                  ${isSnakeBody ? 'bg-gradient-to-br from-green-500 to-green-700' : ''}
-                  ${isFood ? 'bg-gradient-to-br from-yellow-400 to-orange-500 shadow-lg shadow-yellow-400/50 animate-pulse' : ''}
-                  ${!isSnakeHead && !isSnakeBody && !isFood ? 'bg-gray-800/30' : ''}
+                  aspect-square transition-all duration-100 border border-green-900/30
+                  ${isSnakeHead ? 'bg-green-400 shadow-lg shadow-green-400/50 animate-pulse' : ''}
+                  ${isSnakeBody ? 'bg-green-500' : ''}
+                  ${isFood ? 'bg-yellow-400 shadow-lg shadow-yellow-400/50 animate-pulse' : ''}
+                  ${!isSnakeHead && !isSnakeBody && !isFood ? 'bg-black/60' : ''}
                 `}
               >
-                {isFood && <div className="w-full h-full flex items-center justify-center text-xs">🪙</div>}
+                {isFood && <div className="w-full h-full flex items-center justify-center text-xs text-black font-bold">$</div>}
+                {isSnakeHead && <div className="w-full h-full flex items-center justify-center text-xs text-black font-bold">🐍</div>}
               </div>
             );
           })}
@@ -181,66 +229,66 @@ const GameBoard = ({ onGameEnd }: GameBoardProps) => {
           <Button 
             onClick={() => direction.y !== 1 && setDirection({ x: 0, y: -1 })}
             variant="outline"
-            className="border-blue-500 text-blue-300 hover:bg-blue-500/20"
+            className="border-green-500 text-green-400 hover:bg-green-500/20 bg-black/50 font-mono rounded-none"
           >
             ⬆️
           </Button>
           <Button 
             onClick={() => direction.x !== 1 && setDirection({ x: -1, y: 0 })}
             variant="outline"
-            className="border-blue-500 text-blue-300 hover:bg-blue-500/20"
+            className="border-green-500 text-green-400 hover:bg-green-500/20 bg-black/50 font-mono rounded-none"
           >
             ⬅️
           </Button>
           <Button 
             onClick={() => direction.y !== -1 && setDirection({ x: 0, y: 1 })}
             variant="outline"
-            className="border-blue-500 text-blue-300 hover:bg-blue-500/20"
+            className="border-green-500 text-green-400 hover:bg-green-500/20 bg-black/50 font-mono rounded-none"
           >
             ⬇️
           </Button>
           <Button 
             onClick={() => direction.x !== -1 && setDirection({ x: 1, y: 0 })}
             variant="outline"
-            className="border-blue-500 text-blue-300 hover:bg-blue-500/20"
+            className="border-green-500 text-green-400 hover:bg-green-500/20 bg-black/50 font-mono rounded-none"
           >
             ➡️
           </Button>
         </div>
         
-        <p className="text-gray-400 text-sm">
-          Use arrow keys or buttons to control • Spacebar to pause
+        <p className="text-green-500 text-sm font-mono">
+          Use arrow keys or buttons to navigate • Spacebar to pause system
         </p>
         
         {isPaused && (
-          <div className="mt-4 p-4 bg-yellow-500/20 border border-yellow-400/30 rounded-lg">
-            <p className="text-yellow-300 font-bold">Game Paused</p>
+          <div className="mt-4 p-4 bg-green-500/20 border border-green-400/50 rounded-none">
+            <p className="text-green-300 font-bold font-mono">SYSTEM PAUSED</p>
           </div>
         )}
       </div>
 
       {/* Game Over Modal */}
       {gameOver && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
-          <Card className="bg-gradient-to-br from-red-900/80 to-purple-900/80 border-red-500/50 p-8 max-w-md mx-4">
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-50">
+          <Card className="bg-black/95 border-red-500/50 p-8 max-w-md mx-4 rounded-none">
             <div className="text-center">
-              <h2 className="text-3xl font-bold mb-4 text-red-400">Game Over! 💀</h2>
-              <p className="text-xl mb-2">Final Score: <span className="text-green-400 font-bold">{score}</span></p>
-              <p className="text-lg mb-6">$CHOMP Earned: <span className="text-yellow-400 font-bold">{Math.floor(score / 10)}</span></p>
+              <h2 className="text-3xl font-bold mb-4 text-red-400 font-mono">SYSTEM ERROR! 💀</h2>
+              <p className="text-xl mb-2 font-mono">Final Score: <span className="text-green-400 font-bold">{score}</span></p>
+              <p className="text-lg mb-6 font-mono">$CHOMP Earned: <span className="text-yellow-400 font-bold">{Math.floor(score / 10)}</span></p>
               
               <div className="space-y-4">
                 <Button 
                   onClick={resetGame}
-                  className="w-full bg-gradient-to-r from-green-500 to-yellow-500 hover:from-green-600 hover:to-yellow-600 text-black font-bold"
+                  className="w-full bg-green-500/20 border-2 border-green-500 text-green-400 hover:bg-green-500/30 font-bold font-mono rounded-none"
                 >
-                  🔄 Play Again
+                  🔄 RESTART MATRIX
                 </Button>
                 <Button 
                   onClick={() => onGameEnd(score)}
                   variant="outline"
-                  className="w-full border-gray-500 text-gray-300 hover:bg-gray-500/20"
+                  className="w-full border-gray-500 text-gray-400 hover:bg-gray-500/20 bg-black/50 font-mono rounded-none"
                 >
-                  🏠 Back to Menu
+                  🏠 EXIT TO MAIN
                 </Button>
               </div>
             </div>
