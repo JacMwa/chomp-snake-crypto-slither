@@ -1,12 +1,13 @@
 
 import { useState, useEffect } from "react";
 import GameBoard from "../components/GameBoard";
+import FlappyBird from "../components/FlappyBird";
 import Leaderboard from "../components/Leaderboard";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
 const Index = () => {
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentGame, setCurrentGame] = useState<'none' | 'snake' | 'flappy'>('none');
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [score, setScore] = useState(0);
   const [chompTokens, setChompTokens] = useState(0);
@@ -23,13 +24,13 @@ const Index = () => {
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-6xl font-bold mb-4 text-green-400 animate-pulse tracking-wider">
-            CHOMP SNAKE 🐍
+            MATRIX ARCADE 🎮
           </h1>
-          <p className="text-xl mb-2 text-green-300">ENTER THE MATRIX • CONSUME DATA • DOMINATE</p>
+          <p className="text-xl mb-2 text-green-300">ENTER THE MATRIX • PLAY THE SYSTEM • DOMINATE</p>
           <p className="text-lg text-green-500 font-mono">Score points • Earn $CHOMP • Climb the system</p>
         </div>
 
-        {!isPlaying ? (
+        {currentGame === 'none' ? (
           <div className="max-w-4xl mx-auto">
             {/* Game Stats Dashboard */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -53,34 +54,52 @@ const Index = () => {
               </Card>
             </div>
 
-            {/* Main Menu */}
+            {/* Game Selection Menu */}
             <div className="text-center space-y-6">
-              <div className="space-y-4">
+              <div className="text-2xl font-bold text-green-400 mb-6 font-mono">
+                SELECT PROTOCOL
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
                 <Button 
-                  onClick={() => setIsPlaying(true)}
-                  className="bg-green-500/20 border-2 border-green-500 text-green-400 hover:bg-green-500/30 hover:text-green-300 font-bold py-4 px-8 text-xl rounded-none font-mono transform hover:scale-105 transition-all duration-200 shadow-lg shadow-green-500/25"
+                  onClick={() => setCurrentGame('snake')}
+                  className="bg-green-500/20 border-2 border-green-500 text-green-400 hover:bg-green-500/30 hover:text-green-300 font-bold py-6 px-8 text-xl rounded-none font-mono transform hover:scale-105 transition-all duration-200 shadow-lg shadow-green-500/25"
                 >
-                  🐍 JACK IN
+                  🐍 CHOMP SNAKE
                 </Button>
                 
-                <div className="flex justify-center space-x-4">
-                  <Button 
-                    variant="outline"
-                    onClick={() => setShowLeaderboard(true)}
-                    className="border-green-500 text-green-400 hover:bg-green-500/20 bg-black/50 font-mono rounded-none"
-                  >
-                    🏆 LEADERBOARD
-                  </Button>
-                </div>
+                <Button 
+                  onClick={() => setCurrentGame('flappy')}
+                  className="bg-green-500/20 border-2 border-green-500 text-green-400 hover:bg-green-500/30 hover:text-green-300 font-bold py-6 px-8 text-xl rounded-none font-mono transform hover:scale-105 transition-all duration-200 shadow-lg shadow-green-500/25"
+                >
+                  🐦 MATRIX BIRD
+                </Button>
+              </div>
+              
+              <div className="flex justify-center space-x-4 mt-8">
+                <Button 
+                  variant="outline"
+                  onClick={() => setShowLeaderboard(true)}
+                  className="border-green-500 text-green-400 hover:bg-green-500/20 bg-black/50 font-mono rounded-none"
+                >
+                  🏆 LEADERBOARD
+                </Button>
               </div>
             </div>
           </div>
-        ) : (
+        ) : currentGame === 'snake' ? (
           <GameBoard 
             onGameEnd={(finalScore) => {
               setScore(Math.max(score, finalScore));
               setChompTokens(chompTokens + Math.floor(finalScore / 10));
-              setIsPlaying(false);
+              setCurrentGame('none');
+            }}
+          />
+        ) : (
+          <FlappyBird 
+            onGameEnd={(finalScore) => {
+              setScore(Math.max(score, finalScore));
+              setChompTokens(chompTokens + Math.floor(finalScore / 5));
+              setCurrentGame('none');
             }}
           />
         )}
@@ -90,7 +109,7 @@ const Index = () => {
         )}
       </div>
 
-      <style jsx>{`
+      <style>{`
         .matrix-rain {
           position: absolute;
           top: 0;
